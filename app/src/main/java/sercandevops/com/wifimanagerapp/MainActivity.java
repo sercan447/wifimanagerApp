@@ -33,20 +33,6 @@ public class MainActivity extends AppCompatActivity {
 
 
     @Override
-    protected void onPause() {
-        super.onPause();
-        unregisterReceiver(wifiReciever);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        IntentFilter intentFilter = new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
-        registerReceiver(wifiReciever,intentFilter);
-    }
-
-    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -63,32 +49,30 @@ public class MainActivity extends AppCompatActivity {
             mainWifiObj.setWifiEnabled(true);
         }
 
-       boolean sonuc = mainWifiObj.startScan();
-
-       if(sonuc){
-           Log.i("DINLE :","SCAN RUNING.. ");
-       }else{
-           Log.i("DINLE :","SCAN PROBLEM");
-       }
-
         wifilist = new ArrayList<>();
 
         recyclerView = (RecyclerView) findViewById(R.id.recyclerview);
          sercanAdapter = new SercanAdapter(this,wifilist);
 
-         //Listele();
-        recyclerView.setAdapter(sercanAdapter);
-
-        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
-        linearLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
-        recyclerView.setLayoutManager(linearLayoutManager);
-
+         Listele();
 
     }
-public void Listele(){
+public void Listele()
+{
 
-    if(mainWifiObj.getScanResults().size() > 0) {
-        for (ScanResult s : mainWifiObj.getScanResults()) {
+    boolean sonuc = mainWifiObj.startScan();
+
+    if(sonuc){
+        Log.i("DINLE :","SCAN RUNING.. ");
+    }else{
+        Log.i("DINLE :","SCAN PROBLEM");
+    }
+
+    if(mainWifiObj.getScanResults().size() > 0)
+    {
+
+        for (ScanResult s : mainWifiObj.getScanResults())
+        {
             Log.i("GUL", s.SSID + "-"  + s.BSSID+"-");
             String sinyalDurum = "";
             if(WifiManager.calculateSignalLevel(s.level, 5) == 5){
@@ -101,48 +85,70 @@ public void Listele(){
                 sinyalDurum = "Zayıf";
             }
             wifilist.add(new WifiBilgi(s.SSID,s.BSSID,sinyalDurum));
+            sercanAdapter.notifyDataSetChanged();
         }
     }else{
-        Log.i("GUL", "BOŞ");
-       // wifilist.clear();
+        Log.i("DINLE", "BOŞ");
     }
+
+    recyclerView.setAdapter(sercanAdapter);
+
+    LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+    linearLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
+    recyclerView.setLayoutManager(linearLayoutManager);
 
 
 }//Listele
+
+
+    
     class WifiScanReceiver extends BroadcastReceiver {
 
         public void onReceive(Context c, Intent intent) {
-            boolean success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED,false);
+            final boolean success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED,false);
 
-            if(success)
-            {
-                if(mainWifiObj.getScanResults().size() > 0) {
-                    Toast.makeText(getApplicationContext(),"SAYI : "+mainWifiObj.getScanResults().size(),Toast.LENGTH_LONG).show();
-                }else{
-                    Toast.makeText(getApplicationContext(),"HIVBISEY YOK",Toast.LENGTH_LONG).show();
-                    Log.i("DINLE", "WIFI YOK.");
-                }
-            }else{
-                Log.i("DINLE", "FAUILERE ..");
-            }
 
             Handler handler = new Handler();
             handler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    Log.i("GUL TAHG","YE");
+
+                    if(success)
+                    {
+                        if(mainWifiObj.getScanResults().size() > 0) {
+                            Log.i("DINLE", "WIFI VAR.");
+                        }else{
+                            Log.i("DINLE", "WIFI YOK.");
+                        }
+                    }else{
+                        Log.i("DINLE", "FAUILERE ..");
+                    }
+
                     wifilist.clear();
+
+                    recyclerView.swapAdapter(sercanAdapter,false);
                     sercanAdapter.notifyDataSetChanged();
+
                     Listele();
+
                 }
             },1000);
-
-
-          //  recyclerView.invalidate();
-          //  sercanAdapter.notifyItemRangeRemoved(0,mainWifiObj.getScanResults().size());
         }//ONRECEİVE
-
-
-
     }//  class WifiScanReceiver
+
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unregisterReceiver(wifiReciever);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        IntentFilter intentFilter = new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
+        registerReceiver(wifiReciever,intentFilter);
+    }
+
 }
